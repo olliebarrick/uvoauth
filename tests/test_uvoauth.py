@@ -3,6 +3,7 @@ from uvhttp.utils import start_loop
 from uvoauth.uvoauth import Oauth
 from sanic import Sanic
 from sanic.response import json
+from urllib.parse import parse_qs
 import functools
 import urllib.parse
 
@@ -16,28 +17,30 @@ def oauth_server(func):
         @app.route('/token', methods=['POST'])
         async def token(request):
             assert_equal(request.headers['Authorization'], 'Basic MTIzNDo1Njc4')
+            data = parse_qs(request.body.decode())
 
-            if 'code' in request.form:
-                assert_equal(request.form['grant_type'], 'access_code')
-                assert_equal(request.form['code'], 'abcdefgh')
-                assert_equal(request.form['redirect_uri'], 'http://example.com/callback')
-            elif 'refresh_token' in request.form:
-                assert_equal(request.form['grant_type'], 'refresh_token')
-                assert_equal(request.form['refresh_token'], 'hello')
+            if 'code' in data:
+                assert_equal(data['grant_type'][0], 'access_code')
+                assert_equal(data['code'][0], 'abcdefgh')
+                assert_equal(data['redirect_uri'][0], 'http://example.com/callback')
+            elif 'refresh_token' in data:
+                assert_equal(data['grant_type'][0], 'refresh_token')
+                assert_equal(data['refresh_token'][0], 'hello')
             else:
                 raise AssertionError('No code or refresh token!')
 
             return json({
                 "access_token": "aosentuh",
                 "token_type": "Bearer",
-                "scope": request.form['scope'],
+                "scope": 'scope1 scope2',
                 "expires_in": 30,
                 "refresh_token": "hello"
             })
 
         @app.route('/api')
         async def api(request):
-            pass
+            assert_equal(request.headers['Authorization'], 'Bearer aosentuh')
+            return json({})
 
         server = await app.create_server(host='127.0.0.1', port=8089)
 
@@ -70,7 +73,7 @@ async def test_uvoauth(app, loop):
 
     assert_equal(oauth.is_registered('newuser'), True)
 
-    assert_equal(await oauth.get_token('newuser'), 'hello')
+    assert_equal(await oauth.get_token('newuser'), 'aosentuh')
 
-    response = await oauth.request('newuser', b'GET', url + 'api')
-    assert_equal(response.json(), {'authorization': 'Bearer hello'})
+    response = await oauth.request(b'GET', (url + 'api').encode(), identifier='newuser')
+    assert_equal(response.json(), {})

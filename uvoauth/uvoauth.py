@@ -1,5 +1,6 @@
 import base64
 import uvhttp.http
+import time
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 class Oauth(uvhttp.http.Session):
@@ -99,7 +100,7 @@ class Oauth(uvhttp.http.Session):
         auth_token = '{}:{}'.format(self.client_id, self.client_secret)
         auth_token = base64.b64encode(auth_token.encode()).decode()
 
-        token = await self.request(None, b'POST', self.token_url,
+        token = await self.request(b'POST', self.token_url,
             data=urlencode(args).encode(), headers={
                 b'Authorization': 'Basic {}'.format(auth_token).encode(),
                 b'Content-type': b'application/x-www-form-encoded'
@@ -108,9 +109,17 @@ class Oauth(uvhttp.http.Session):
         self.set_token(identifier, token.json())
         return self.get_valid_token(identifier)
         
-    async def request(self, identifier, *args, **kwargs):
+    async def request(self, *args, identifier=None, **kwargs):
         """
         Make a request, but add the token for the given identifier to
         the headers to authenticate the request. See :class:`uvhttp.http.Session`.
+        If token is none, just make a request.
         """
+        if identifier:
+            if 'headers' not in kwargs:
+                kwargs['headers'] = {}
+
+            token = await self.get_token(identifier)
+            kwargs['headers'][b'authorization'] = 'Bearer {}'.format(token).encode()
+
         return await super().request(*args, **kwargs)
