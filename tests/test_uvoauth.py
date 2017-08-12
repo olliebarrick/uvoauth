@@ -11,16 +11,33 @@ def oauth_server(func):
     @start_loop
     async def oauth_wrapper(loop, *args, **kwargs):
         app = Sanic(__name__)
+        app.config.LOGO = None
 
-        @app.route('/authorize')
-        async def authorize(request):
-            return {
-                ""
+        @app.route('/token', methods=['POST'])
+        async def token(request):
+            token = {
+                "access_token": "aosentuh",
+                "token_type": "Bearer",
+                "scope": request.form['scope'],
+                "expires_in": 30,
+                "refresh_token": "hello"
             }
 
-        @app.route('/token')
-        async def token(request):
-            pass
+            if 'code' in request.form:
+                assert_equal(request.form['grant_type'], 'access_code')
+                assert_equal(request.form['code'], 'abcdefgh')
+            elif 'refresh_token' in request.form:
+                assert_equal(request.form['grant_type'], 'refresh_token')
+                assert_equal(request.form['refresh_token'], 'hello')
+            else:
+                raise AssertionError('No code or refresh token!')
+
+            assert_equal(request.form['client_id'], '1234')
+            assert_equal(request.form['client_secret'], '5678')
+
+            return json(
+}
+            )
 
         @app.route('/api')
         async def api(request):
@@ -39,17 +56,17 @@ def oauth_server(func):
 async def test_uvoauth(app, loop):
     url = 'http://127.0.0.1:8089/'
 
-    oauth = Oauth(loop, url + 'authorize', url + 'token', '1234',
+    oauth = Oauth(loop, url + 'authorize', url + 'token', '1234', '5678',
             'http://example.com/callback')
 
     auth_url = oauth.authenticate_url('scope1', 'scope2')
     auth_url = urllib.parse.urlsplit(auth_url)
     qs = urllib.parse.parse_qs(auth_url.query)
 
-    assert_equal(qs['client_id'], '1234')
-    assert_equal(qs['response_type'], 'code')
-    assert_equal(qs['redirect_uri'], 'http://example.com/callback')
-    assert_equal(qs['scope'], 'scope1 scope2')
+    assert_equal(qs['client_id'][0], '1234')
+    assert_equal(qs['response_type'][0], 'code')
+    assert_equal(qs['redirect_uri'][0], 'http://example.com/callback')
+    assert_equal(qs['scope'][0], 'scope1 scope2')
 
     assert_equal(oauth.is_registered('newuser'), False)
 
