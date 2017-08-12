@@ -15,29 +15,25 @@ def oauth_server(func):
 
         @app.route('/token', methods=['POST'])
         async def token(request):
-            token = {
-                "access_token": "aosentuh",
-                "token_type": "Bearer",
-                "scope": request.form['scope'],
-                "expires_in": 30,
-                "refresh_token": "hello"
-            }
+            assert_equal(request.headers['Authorization'], 'Basic MTIzNDo1Njc4')
 
             if 'code' in request.form:
                 assert_equal(request.form['grant_type'], 'access_code')
                 assert_equal(request.form['code'], 'abcdefgh')
+                assert_equal(request.form['redirect_uri'], 'http://example.com/callback')
             elif 'refresh_token' in request.form:
                 assert_equal(request.form['grant_type'], 'refresh_token')
                 assert_equal(request.form['refresh_token'], 'hello')
             else:
                 raise AssertionError('No code or refresh token!')
 
-            assert_equal(request.form['client_id'], '1234')
-            assert_equal(request.form['client_secret'], '5678')
-
-            return json(
-}
-            )
+            return json({
+                "access_token": "aosentuh",
+                "token_type": "Bearer",
+                "scope": request.form['scope'],
+                "expires_in": 30,
+                "refresh_token": "hello"
+            })
 
         @app.route('/api')
         async def api(request):

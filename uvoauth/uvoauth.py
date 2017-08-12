@@ -87,23 +87,21 @@ class Oauth(uvhttp.http.Session):
 
         login = self.logins[identifier]
 
-        args = {
-            "grant_type": "refresh_token",
-            "client_id": self.client_id,
-            "client_secret": self.client_secret
-        }
-
+        args = {}
         if 'refresh_token' in login:
+            args['grant_type'] = 'refresh_token'
             args['refresh_token'] = login['refresh_token']
         else:
+            args['grant_type'] = 'access_code'
             args['code'] = login['code']
+            args['redirect_uri'] = self.redirect_url
 
         auth_token = '{}:{}'.format(self.client_id, self.client_secret)
-        auth_token = base64.b64encode(auth_token.encode())
+        auth_token = base64.b64encode(auth_token.encode()).decode()
 
         token = await self.request(None, b'POST', self.token_url,
             data=urlencode(args).encode(), headers={
-                b'Authorization': 'Bearer {}'.format(auth_token).encode(),
+                b'Authorization': 'Basic {}'.format(auth_token).encode(),
                 b'Content-type': b'application/x-www-form-encoded'
             })
 
