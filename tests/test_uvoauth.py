@@ -1,14 +1,10 @@
 from freezegun import freeze_time
 from nose.tools import *
-from uvhttp.utils import start_loop, http_server
-from uvoauth.uvoauth import Oauth, OauthError
-from sanic import Sanic
-from sanic.response import json
-from urllib.parse import parse_qs
-import datetime
-import functools
-import urllib.parse
+from uvhttp.utils import http_server
 from uvoauth.utils import *
+from uvoauth.uvoauth import Oauth, OauthError
+import datetime
+import urllib.parse
 
 @http_server(OauthServer)
 async def test_uvoauth(server, loop):

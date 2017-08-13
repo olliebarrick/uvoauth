@@ -1,13 +1,7 @@
-from freezegun import freeze_time
 from nose.tools import *
-from uvhttp.utils import start_loop, HttpServer
-from uvoauth.uvoauth import Oauth, OauthError
-from sanic import Sanic
+from uvhttp.utils import HttpServer
 from sanic.response import json
 from urllib.parse import parse_qs
-import datetime
-import functools
-import urllib.parse
 
 FIRST_TOKEN = 'first token'
 SECOND_TOKEN = 'second token'
