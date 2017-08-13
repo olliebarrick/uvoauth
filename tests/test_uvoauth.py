@@ -1,6 +1,6 @@
 from freezegun import freeze_time
 from nose.tools import *
-from uvhttp.utils import start_loop
+from uvhttp.utils import start_loop, http_server
 from uvoauth.uvoauth import Oauth, OauthError
 from sanic import Sanic
 from sanic.response import json
@@ -8,67 +8,11 @@ from urllib.parse import parse_qs
 import datetime
 import functools
 import urllib.parse
+from uvoauth.utils import *
 
-FIRST_TOKEN = 'first token'
-SECOND_TOKEN = 'second token'
-FIRST_REFRESH_TOKEN = 'refresh token'
-SECOND_REFRESH_TOKEN = 'refresh token 2'
-ACCESS_CODE = 'access code'
-
-def oauth_server(func):
-    @functools.wraps(func)
-    @start_loop
-    async def oauth_wrapper(loop, *args, **kwargs):
-        app = Sanic(__name__)
-        app.config.LOGO = None
-
-        @app.route('/token', methods=['POST'])
-        async def token(request):
-            assert_equal(request.headers['Authorization'], 'Basic MTIzNDo1Njc4')
-            data = parse_qs(request.body.decode())
-
-            token = {
-                "access_token": FIRST_TOKEN,
-                "token_type": "Bearer",
-                "scope": 'scope1 scope2',
-                "expires_in": 30,
-                "refresh_token": FIRST_REFRESH_TOKEN
-            }
-
-            if 'code' in data:
-                assert_equal(data['grant_type'][0], 'access_code')
-                assert_equal(data['code'][0], ACCESS_CODE)
-                assert_equal(data['redirect_uri'][0], 'http://example.com/callback')
-            elif 'refresh_token' in data:
-                assert_equal(data['grant_type'][0], 'refresh_token')
-
-                if data['refresh_token'][0] == FIRST_REFRESH_TOKEN:
-                    token['access_token'] = SECOND_TOKEN
-                    token['refresh_token'] = SECOND_REFRESH_TOKEN
-                else:
-                    assert_equal(data['refresh_token'][0], SECOND_REFRESH_TOKEN)
-            else:
-                raise AssertionError('No code or refresh token!')
-
-            return json(token)
-
-        @app.route('/api')
-        async def api(request):
-            assert_in(request.headers['Authorization'], [ 'Bearer ' + FIRST_TOKEN, 'Bearer ' + SECOND_TOKEN ])
-            return json({'Authorization': request.headers['Authorization']})
-
-        server = await app.create_server(host='127.0.0.1', port=8089)
-
-        try:
-            await func(app, loop, *args, **kwargs)
-        finally:
-            server.close()
-
-    return oauth_wrapper
-
-@oauth_server
-async def test_uvoauth(app, loop):
-    url = 'http://127.0.0.1:8089/'
+@http_server(OauthServer)
+async def test_uvoauth(server, loop):
+    url = server.url.decode()
 
     oauth = Oauth(loop, url + 'authorize', url + 'token', '1234', '5678',
             'http://example.com/callback')
@@ -93,9 +37,9 @@ async def test_uvoauth(app, loop):
     response = await oauth.request(b'GET', (url + 'api').encode(), identifier='newuser')
     assert_equal(response.json(), {'Authorization': 'Bearer {}'.format(FIRST_TOKEN)})
 
-@oauth_server
-async def test_uvoauth_caching(app, loop):
-    url = 'http://127.0.0.1:8089/'
+@http_server(OauthServer)
+async def test_uvoauth_caching(server, loop):
+    url = server.url.decode()
 
     oauth = Oauth(loop, url + 'authorize', url + 'token', '1234', '5678',
             'http://example.com/callback')
@@ -123,9 +67,9 @@ async def test_uvoauth_caching(app, loop):
         response = await oauth.get(api_url, identifier='newuser')
         assert_equal(response.json(), {'Authorization': 'Bearer {}'.format(FIRST_TOKEN)})
 
-@oauth_server
-async def test_uvoauth_unregistered(app, loop):
-    url = 'http://127.0.0.1:8089/'
+@http_server(OauthServer)
+async def test_uvoauth_unregistered(server, loop):
+    url = server.url.decode()
 
     oauth = Oauth(loop, url + 'authorize', url + 'token', '1234', '5678',
             'http://example.com/callback')
