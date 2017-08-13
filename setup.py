@@ -5,7 +5,7 @@ requirements = os.path.join(os.path.dirname(__file__), 'requirements.txt')
 
 setup(
     name='uvoauth',
-    version='0.4',
+    version='0.5',
     description='Oauth client for uvhttp',
     url='https://github.com/justinbarrick/uvoauth',
     packages=['uvoauth'],
