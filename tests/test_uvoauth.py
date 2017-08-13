@@ -1,8 +1,10 @@
 from freezegun import freeze_time
 from nose.tools import *
+from uvhttp.dns import Resolver
 from uvhttp.utils import http_server
 from uvoauth.utils import *
 from uvoauth.uvoauth import Oauth, OauthError
+import ssl
 import datetime
 import urllib.parse
 
@@ -85,3 +87,25 @@ async def test_uvoauth_unregistered(server, loop):
         pass
     else:
         raise AssertionError('Should have raised OauthError.')
+
+@http_server(OauthServer)
+async def test_uvoauth_https(server, loop):
+    url = 'https://myoauth.com/'
+
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    resolver = Resolver(loop)
+    resolver.add_to_cache(b'myoauth.com', 443, server.https_host.encode(),
+            30, port=server.https_port)
+
+    oauth = Oauth(loop, url + 'authorize', url + 'token', '1234', '5678',
+            'http://example.com/callback', ssl=ctx, resolver=resolver)
+
+    oauth.register_auth_code('newuser', ACCESS_CODE)
+
+    api_url = (url + 'api').encode()
+
+    response = await oauth.get(api_url, identifier='newuser', ssl=ctx)
+    assert_equal(response.json(), {'Authorization': 'Bearer {}'.format(FIRST_TOKEN)})
