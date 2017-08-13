@@ -108,7 +108,7 @@ class Oauth(uvhttp.http.Session):
 
         self.set_token(identifier, token.json())
         return self.get_valid_token(identifier)
-        
+
     async def request(self, *args, identifier=None, **kwargs):
         """
         Make a request, but add the token for the given identifier to
