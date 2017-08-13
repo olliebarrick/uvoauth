@@ -11,7 +11,7 @@ class Oauth(uvhttp.http.Session):
     Oauth client for :mod:`uvhttp`.
     """
 
-    def __init__(self, loop, auth_url, token_url, client_id, client_secret, redirect_url=None, conn_limit=10, resolver=None):
+    def __init__(self, loop, auth_url, token_url, client_id, client_secret, redirect_url=None, conn_limit=10, resolver=None, ssl=None):
         """
         * ``loop`` is the asyncio loop to use.
         * ``auth_url`` authorization url of the oauth endpoint (e.g., https://example.com/authorize).
@@ -30,6 +30,8 @@ class Oauth(uvhttp.http.Session):
         self.token_url = token_url
 
         self.logins = {}
+
+        self.ssl_ctx = ssl
 
         super().__init__(conn_limit, loop, resolver=resolver)
 
@@ -107,7 +109,7 @@ class Oauth(uvhttp.http.Session):
             data=urlencode(args).encode(), headers={
                 b'Authorization': 'Basic {}'.format(auth_token).encode(),
                 b'Content-type': b'application/x-www-form-encoded'
-            })
+            }, ssl=self.ssl_ctx)
 
         self.set_token(identifier, token.json())
         return self.get_valid_token(identifier)
