@@ -3,6 +3,9 @@ import uvhttp.http
 import time
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
+class OauthError(Exception):
+    pass
+
 class Oauth(uvhttp.http.Session):
     """
     Oauth client for :mod:`uvhttp`.
