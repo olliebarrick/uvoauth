@@ -29,7 +29,7 @@ class OauthServer(HttpServer):
         }
 
         if 'code' in data:
-            assert_equal(data['grant_type'][0], 'access_code')
+            assert_equal(data['grant_type'][0], 'authorization_code')
             assert_equal(data['code'][0], ACCESS_CODE)
             assert_equal(data['redirect_uri'][0], 'http://example.com/callback')
         elif 'refresh_token' in data:
