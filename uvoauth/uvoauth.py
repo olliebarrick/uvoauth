@@ -98,7 +98,7 @@ class Oauth(uvhttp.http.Session):
             args['grant_type'] = 'refresh_token'
             args['refresh_token'] = login['refresh_token']
         else:
-            args['grant_type'] = 'access_code'
+            args['grant_type'] = 'authorization_code'
             args['code'] = login['code']
             args['redirect_uri'] = self.redirect_url
 
