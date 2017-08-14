@@ -108,7 +108,7 @@ class Oauth(uvhttp.http.Session):
         token = await self.request(b'POST', self.token_url,
             data=urlencode(args).encode(), headers={
                 b'Authorization': 'Basic {}'.format(auth_token).encode(),
-                b'Content-type': b'application/x-www-form-encoded'
+                b'Content-type': b'application/x-www-form-urlencoded'
             }, ssl=self.ssl_ctx)
 
         self.set_token(identifier, token.json())

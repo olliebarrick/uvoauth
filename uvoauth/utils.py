@@ -18,7 +18,7 @@ class OauthServer(HttpServer):
 
     async def token(self, request):
         assert_equal(request.headers['Authorization'], 'Basic MTIzNDo1Njc4')
-        data = parse_qs(request.body.decode())
+        data = request.form
 
         token = {
             "access_token": FIRST_TOKEN,
